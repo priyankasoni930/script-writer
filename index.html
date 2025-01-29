@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multi-page Text Editor</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        background-image: linear-gradient(to right, #000 1px, transparent 1px);
+        background-size: min(calc(100% - 21px), 821px) 10px;
+        background-position: top 10px left 10px;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      }
+      .container {
+        position: relative;
+        max-width: 800px;
+        border: 1px solid #000;
+        border-bottom: none;
+        margin: 10px;
+        padding: 10px;
+        background: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .toolbar {
+        position: sticky;
+        top: 0;
+        background: white;
+        padding: 10px;
+        border-bottom: 1px solid #ccc;
+        display: flex;
+        gap: 10px;
+        z-index: 3;
+        margin: -10px -10px 10px -10px;
+      }
+      .breaker {
+        position: relative;
+        left: 0;
+        right: 0;
+        height: 55px;
+        border-right: 1px solid white;
+        border-left: 1px solid white;
+        border-top: 1px solid black;
+        border-bottom: 1px solid black;
+        width: calc(100% + 20px);
+        z-index: 2;
+        float: left;
+        clear: both;
+        margin-left: -11px;
+        margin-right: -11px;
+      }
+      .breaker:last-child {
+        border-bottom: none;
+      }
+      #pages::before {
+        content: " ";
+        position: absolute;
+        top: -11px;
+        left: -1px;
+        right: 0;
+        font-size: 12px;
+        color: white;
+        width: 822px;
+        background-color: white;
+        display: block;
+        height: 10px;
+      }
+      .page {
+        position: relative;
+        float: left;
+        clear: both;
+        margin-top: 500px;
+      }
+      #editor {
+        position: relative;
+        z-index: 1;
+        min-height: 500px;
+        line-height: 1.6;
+      }
+      #editor:focus-visible {
+        outline: none;
+      }
+      #editor p {
+        position: relative;
+        background-color: white;
+        margin: 0;
+        padding: 10px 0;
+        font-size: 16px;
+      }
+      .toolbar button {
+        padding: 8px 16px;
+        border: none;
+        background: #2563eb;
+        color: white;
+        cursor: pointer;
+        border-radius: 4px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: background-color 0.2s;
+      }
+      .toolbar button:hover {
+        background: #1e40af;
+      }
+      .page-counter {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="toolbar">
+        <button onclick="saveDocument()">
+          <i class="fas fa-save"></i>
+          Save
+        </button>
+        <button onclick="loadDocument()">
+          <i class="fas fa-folder-open"></i>
+          Load
+        </button>
+        <button onclick="clearDocument()">
+          <i class="fas fa-file"></i>
+          New
+        </button>
+        <button onclick="printDocument()">
+          <i class="fas fa-print"></i>
+          Print
+        </button>
+      </div>
+      <div id="pages"></div>
+      <div id="editor" contenteditable="true">
+        <p>Start typing here...</p>
+      </div>
+      <div class="page-counter">
+        <i class="fas fa-file-alt"></i>
+        Page: <span id="pageCount">1</span>
+      </div>
+    </div>
+
+    <script>
+      const editor = document.querySelector("#editor");
+      const pages = document.querySelector("#pages");
+      const pageCounter = document.querySelector("#pageCount");
+
+      function adjustNumberOfPages() {
+        const editorHeight = editor.clientHeight;
+        const neededPages = parseInt(editorHeight / 547) + 1;
+        const currentPages = pages.querySelectorAll(".page").length;
+
+        if (neededPages > currentPages) {
+          for (let i = currentPages; i < neededPages; i++) {
+            const page = document.createElement("div");
+            page.classList.add("page");
+            pages.appendChild(page);
+            const breaker = document.createElement("div");
+            breaker.classList.add("breaker");
+            pages.appendChild(breaker);
+          }
+        } else if (neededPages < currentPages) {
+          for (let i = currentPages - 1; i >= neededPages; i--) {
+            pages.removeChild(pages.querySelector(".page"));
+            pages.removeChild(pages.querySelector(".breaker"));
+          }
+        }
+        pageCounter.textContent = neededPages;
+      }
+
+      function saveDocument() {
+        const content = editor.innerHTML;
+        localStorage.setItem("document-content", content);
+        alert("Document saved!");
+      }
+
+      function loadDocument() {
+        const content = localStorage.getItem("document-content");
+        if (content) {
+          editor.innerHTML = content;
+          adjustNumberOfPages();
+        } else {
+          alert("No saved document found!");
+        }
+      }
+
+      function clearDocument() {
+        if (confirm("Are you sure you want to clear the document?")) {
+          editor.innerHTML = "<p>Start typing here...</p>";
+          adjustNumberOfPages();
+        }
+      }
+
+      function printDocument() {
+        window.print();
+      }
+
+      editor.addEventListener("focus", function (e) {
+        if (editor.textContent === "Start typing here...") {
+          editor.innerHTML = "<p></p>";
+        }
+      });
+
+      editor.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          document.execCommand("insertParagraph", false);
+        }
+      });
+
+      const observer = new MutationObserver(adjustNumberOfPages);
+      observer.observe(editor, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+
+      window.addEventListener("resize", adjustNumberOfPages);
+      adjustNumberOfPages();
+    </script>
+  </body>
+</html>
